@@ -4,6 +4,9 @@ on:
   pull_request:
     branches: [ main ]
 
+permissions:
+  pull-requests: write
+
 jobs:
   build:
 
@@ -11,7 +14,7 @@ jobs:
 
     strategy:
       matrix:
-        node-version: [12.x, 14.x, 16.x]
+        node-version: [18.x, 20.x]
 
     steps:
     - uses: actions/checkout@v2
@@ -20,19 +23,18 @@ jobs:
       run: npm test
 
     - name: if fail
-      uses: actions/github-script@0.2.0
+      uses: actions/github-script@v7
       with:
         github-token: ${{github.token}}
         script: |
-          const ref = "${{github.ref}}"
-          const pull_number = Number(ref.split("/")[2])
-          await github.pulls.createReview({
+          const pull_number = context.payload.pull_request.number
+          await github.rest.pulls.createReview({
             ...context.repo,
             pull_number,
             body:"테스트가 실패했습니다.",
             event: "REQUEST_CHANGES"
           })
-          await github.pulls.update({
+          await github.rest.pulls.update({
             ...context.repo,
             pull_number,
             state: "closed"
